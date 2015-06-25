@@ -21,109 +21,90 @@
  *	If something is not valid - throw Error
  */
 function solve() {
-
-    var filerBy = function (objs, property, value) {
-        function hasValue(value) {
-            return function (element) {
-                return element[property] === value;
+    function clone(obj) {
+        if (obj === null || typeof(obj) !== 'object' || 'isActiveClone' in obj)
+            return obj;
+        var temp = obj.constructor(); // changed
+        for (var key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                obj['isActiveClone'] = null;
+                temp[key] = clone(obj[key]);
+                delete obj['isActiveClone'];
             }
         }
+        return temp;
+    }
 
-        return objs.filter(hasValue(value));
-    };
     var library = (function () {
-        var books = [];
-        var categories = [];
-        function clone(obj) {
-            if(obj === null || typeof(obj) !== 'object' || 'isActiveClone' in obj)
-                return obj;
+        var checkUniqueness = function (objects, property, object) {
+            var msg,
+                unique = !objects.some(function (obj) {
+                    return obj[property] === object[property];
+                });
+            if (!unique) {
+                msg = property + ' should be unique!';
+                throw new Error(msg);
+            }
+        };
 
-            var temp = obj.constructor(); // changed
-
-            for(var key in obj) {
-                if(Object.prototype.hasOwnProperty.call(obj, key)) {
-                    obj['isActiveClone'] = null;
-                    temp[key] = clone(obj[key]);
-                    delete obj['isActiveClone'];
+        var checkLength = function (elem, prop) {
+            var msg,
+                len = elem.length;
+            if (len < 2 || len > 100) {
+                msg = prop + ' should be with length between 2 and 100 characters';
+                throw new Error(msg);
+            }
+        };
+        var filterByProperty = function (objects, property, value) {
+            function filterFunc(property, value) {
+                return function (element) {
+                    return element[property] === value;
                 }
             }
 
-            return temp;
-        }
-        function listBooks(filter) {
-            var result = clone(books);
-            if (typeof filter === 'undefined') {
+            return objects.filter(filterFunc(property, value));
+        };
+        var books = [];
+        var categories = [];
+
+        function listBooks(filters) {
+            var result;
+            if (typeof filters === 'undefined') {
                 return books;
             }
-
-            if(filter.hasOwnProperty("category")){
-                result = filerBy(result, "category", filter.category);
+            if(typeof  filters !== 'object'){
+                throw new Error("Invalid argument");
             }
-
-            if(filter.hasOwnProperty("author")){
-                result = filerBy(result, "author", filter.author);
-            }
-
-            if(filter.hasOwnProperty("title")){
-                result = filerBy(result, "title", filter.author);
+            result = clone(books);
+            for(property in filters){
+                result = filterByProperty(result, property, filters[property]);
             }
 
             return result;
         }
 
-        var validateLength = function (value) {
-            value = value.toString();
-            var len = value.length;
-            if (len < 2 || len > 100) {
-                throw new Error("The length should be between 2 and 100");
-            }
-        };
-
         function addBook(book) {
-            function validateBook(book) {
-                if (typeof book != "object") {
-                    throw new Error("The book should be object.");
-                }
-                if (!book.hasOwnProperty('title') || !book.hasOwnProperty('author') || !book.hasOwnProperty('isbn') || !book.hasOwnProperty('category')) {
-                    throw new Error("The book should have title, category, author and isbn");
-                }
-                if (books.some(function (b) {
-                        return b.title + b.author + b.isbn === book.title + book.author + book.isbn;
-                    })) {
-                    throw new Error("There is another book with the same title author and isbn.");
-                }
-                if (books.some(function (b) {
-                        return b.title === book.title;
-                    })) {
-                    throw new Error("There is another book with the same title.");
-                }
-                if (books.some(function (b) {
-                        return b.isbn === book.isbn;
-                    })) {
-                    throw new Error("There is another book with the same isbn.");
-                }
-                if (!book.author) {
-                    throw new Error("Too short author name.")
-                }
-                if (book.author.trim().length < 1) {
-                    throw new Error("Too short author name.")
-                }
-                if(!isFinite(+book.isbn)){
-                    throw  new Error('The isbn must be a number!');
-                }
-                if(isNaN(+book.isbn)){
-                    throw new Error("The isbn should contain only digits");
-                }
-                var isblen = book.isbn.toString().length;
-                if (isblen !== 10 && isblen !== 13) {
-                    console.log(book.isbn.toString().length);
-                    throw new Error("The isbn should be 10 or 13 digits");
-                }
+            var isbn_len;
+            checkUniqueness(books, 'title', book);
+            checkUniqueness(books, 'isbn', book);
+            if (!book.hasOwnProperty('author') || !book.hasOwnProperty('title') || !book.hasOwnProperty('category') || !book.hasOwnProperty('isbn')) {
+                throw new Error('Each book should have author, title, category and isbn!');
             }
-
-            validateBook(book);
-            validateLength(book.title);
-            validateLength(book.category);
+            checkLength(book.title, 'title');
+            checkLength(book.category, 'category');
+            if (isNaN(+book.isbn)) {
+                throw new Error("The isbn should contain only digits!");
+            }
+            isbn_len = book.isbn.toString().length;
+            if ([10, 13].indexOf(isbn_len) < 0) {
+                throw new Error("The isb length should be 10 or 13 digits!");
+            }
+            if(typeof book.author !== 'string'){
+                throw new Error('Invalid author name');
+            }
+            if (book.author.toString().length < 1) {
+                throw new Error("Too short author name");
+            }
             if (categories.indexOf(book.category) < 0) {
                 categories.push(book.category);
             }
@@ -147,19 +128,5 @@ function solve() {
         };
     }());
     return library;
-};
-//lib = solve();
-//lib.books.add({
-//    title: "Priklicheniqta na Pesho",
-//    author: "Pesho",
-//    category: "prikliuchenska",
-//    isbn: 1234567890
-//});
-//lib.books.add({
-//    title: "Priklicheniqta na Pesho2",
-//    author: "Pesho",
-//    category: "prikliuchenska",
-//    isbn: 1234577890
-//});
-//console.log(lib.categories.list());
+}
 module.exports = solve;
