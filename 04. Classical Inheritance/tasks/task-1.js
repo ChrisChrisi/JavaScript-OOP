@@ -58,8 +58,8 @@ function solve() {
                 },
                 set: function(value) {
                     var names = value.split(' ');
-                    validatenames(names[0]);
-                    validatenames(names[1]);
+                    validatenames(names[0], 'firstname');
+                    validatenames(names[1], 'lastname');
                     this.firstname = names[0];
                     this.lastname = names[1];
                 }
