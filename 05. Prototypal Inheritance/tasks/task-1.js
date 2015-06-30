@@ -106,8 +106,8 @@ function solve() {
                 return this;
             },
             removeAttribute: function (attrName) {
-                if(this.attributes[attrName]){
-                    delete this.addAttribute[attrName];
+                if(this.attributes.hasOwnProperty(attrName)){
+                    delete this.attributes[attrName];
                 } else {
                     throw new Error("Non existing attribute");
                 }
@@ -141,12 +141,4 @@ function solve() {
     }());
     return domElement;
 }
-var domElement = solve();
-//var text = 'see me',
-//    parent = Object.create(domElement)
-//        .init('parent')
-//        .appendChild(text);
-//parent.content = 'some random content';
-//console.log(parent.innerHTML);
-
 module.exports = solve;
