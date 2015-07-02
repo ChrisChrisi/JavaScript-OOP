@@ -112,7 +112,7 @@ function solve() {
         if(studentId > students.length){
             throw new Error("Invalid student id");
         }
-        if(homeworkId > homeworks.length + 1){
+        if(homeworkId > presentations.length){
             throw new Error("Invalid homework id");
         }
     }
@@ -138,11 +138,56 @@ function solve() {
         results.forEach(function(result){
             validateResult(result);
             if(results.some(function(curResult){
-                    return curResult.studentID === result.studentID;
+                    return curResult !== result && curResult.StudentID === result.StudentID;
                 })){
                 throw new Error("Duplicated student ids!");
             }
         });
+    }
+    // end of the validation functions
+    function sortResults(results){
+        function eval(res1, res2){
+            return res1.grade < res2.grade;
+        }
+        return results.sort(eval);
+    }
+    function getStudentGrades(student, id){
+        var newStudent = JSON.parse(JSON.stringify(student)),
+        examScore,
+        homeworkScore,
+        submittedHW = [];
+        id +=1;
+        function uniq(a) {
+            return a.sort().filter(function(item, pos, ary) {
+                return !pos || item != ary[pos - 1];
+            })
+        }
+        examResults.some(function(result){
+            if(result.StudentID === id){
+                examScore = result.score;
+                return true;
+            }
+        });
+        if(!examScore){
+            examScore = 0;
+        }
+        newStudent.examScore= examScore;
+
+        homeworks.every(function(hw){
+            if(hw.StudentID === id){
+                submittedHW.push(hw.HomeworkID);
+                return true;
+            }
+        });
+        submittedHW = uniq(submittedHW);
+        homeworkScore = submittedHW.length / presentations.length;
+        newStudent.homeworkScore = homeworkScore;
+        newStudent.grade = (75 / 100) * examScore + (25 / 100) * homeworkScore;
+        return newStudent;
+    }
+
+    function setStudentGrades(){
+        students = students.map(getStudentGrades);
     }
 
     var Course = {
@@ -176,8 +221,8 @@ function solve() {
         submitHomework: function (studentID, homeworkID) {
             validateHomework(studentID, homeworkID);
             homeworks.push({
-                "studentID" : studentID,
-                "homeworkID" : homeworkID
+                "StudentID" : studentID,
+                "HomeworkID" : homeworkID
             });
         },
         pushExamResults: function (results) {
@@ -185,11 +230,21 @@ function solve() {
             examResults = examResults.concat(results);
         },
         getTopStudents: function () {
+            setStudentGrades();
+           return sortResults(students).slice(0,10);
         }
     };
 
     return Course;
 }
-
+//var JavascriptOOP = solve();
+//JavascriptOOP.init("JavaScript OOP", ["Introduction", "Closures"]);
+//JavascriptOOP.addStudent("Petur Petrov");
+//JavascriptOOP.addStudent("Ivan Ivanov");
+//JavascriptOOP.addStudent("Georgi Georgiev");
+//
+//JavascriptOOP.submitHomework(1, 1);
+//JavascriptOOP.pushExamResults([{StudentID: 1, score: 10.5},{StudentID: 3, score:5.5}]);
+//console.log(JavascriptOOP.getTopStudents());
 module.exports = solve;
 
